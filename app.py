@@ -1,40 +1,34 @@
-from flask import Flask, request, jsonify
-import joblib
+from flask import Flask, request, jsonify, render_template
+import pickle
 import numpy as np
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static', template_folder='static')
 
-# Load the saved models
-model_cases = joblib.load('confirmed_cases_model.pkl')
-model_cfr = joblib.load('cfr_model.pkl')
+# Load models
+model_cases = pickle.load(open("model_cases.pkl", "rb"))
+model_cfr = pickle.load(open("model_cfr.pkl", "rb"))
 
-@app.route('/predict_cases', methods=['POST'])
-def predict_cases():
-    data = request.get_json()  # Get data from the frontend
-    lat = data['lat']
-    long = data['long']
-    
-    # Prepare the data for prediction
-    features = np.array([[lat, long]])
-    
-    # Predict using the trained model
-    prediction = model_cases.predict(features)
-    
-    return jsonify({'predicted_cases': prediction[0]})
+@app.route('/')
+def home():
+    return render_template('index.html')
 
-@app.route('/predict_cfr', methods=['POST'])
-def predict_cfr():
-    data = request.get_json()  # Get data from the frontend
-    lat = data['lat']
-    long = data['long']
-    
-    # Prepare the data for prediction
-    features = np.array([[lat, long]])
-    
-    # Predict using the trained model
-    prediction = model_cfr.predict(features)
-    
-    return jsonify({'predicted_cfr': prediction[0]})
+@app.route('/predict', methods=['POST'])
+def predict():
+    data = request.json
+    try:
+        lat = float(data['Lat'])
+        long = float(data['Long'])
 
-if __name__ == '__main__':
+        # Make predictions
+        cases_prediction = model_cases.predict([[lat, long]])[0]
+        cfr_prediction = model_cfr.predict([[lat, long]])[0]
+
+        return jsonify({
+            'confirmed_cases': round(cases_prediction, 2),
+            'cfr': round(cfr_prediction, 2),
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
+if __name__ == "__main__":
     app.run(debug=True)

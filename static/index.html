@@ -3,62 +3,113 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Prediction App</title>
+    <title>Ebola Predictor</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f9;
+        margin: 0;
+        padding: 0;
+      }
+      .container {
+        max-width: 600px;
+        margin: 50px auto;
+        padding: 20px;
+        background: #ffffff;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        text-align: center;
+        margin-bottom: 20px;
+        color: #333;
+      }
+      .form-group {
+        margin-bottom: 15px;
+      }
+      .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        color: #555;
+      }
+      .form-group input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+      }
+      .btn {
+        display: block;
+        width: 100%;
+        padding: 10px;
+        background-color: #007bff;
+        color: #ffffff;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      .btn:hover {
+        background-color: #0056b3;
+      }
+      .results {
+        margin-top: 20px;
+        padding: 10px;
+        background: #f9f9f9;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+      }
+    </style>
   </head>
   <body>
-    <h1>Predict Cases and CFR</h1>
-    <form id="prediction-form">
-      <label for="lat">Latitude: </label>
-      <input type="number" id="lat" name="lat" required />
-      <label for="long">Longitude: </label>
-      <input type="number" id="long" name="long" required />
-      <button type="submit">Submit</button>
-    </form>
-
-    <div id="results">
-      <p id="predicted-cases"></p>
-      <p id="predicted-cfr"></p>
+    <div class="container">
+      <h1>Ebola Predictor</h1>
+      <div class="form-group">
+        <label for="latitude">Latitude:</label>
+        <input type="number" id="latitude" placeholder="Enter latitude" />
+      </div>
+      <div class="form-group">
+        <label for="longitude">Longitude:</label>
+        <input type="number" id="longitude" placeholder="Enter longitude" />
+      </div>
+      <button class="btn" onclick="predict()">Predict</button>
+      <div class="results" id="results"></div>
     </div>
 
     <script>
-      document
-        .getElementById("prediction-form")
-        .addEventListener("submit", async (event) => {
-          event.preventDefault();
+      async function predict() {
+        const latitude = document.getElementById("latitude").value;
+        const longitude = document.getElementById("longitude").value;
 
-          const lat = parseFloat(document.getElementById("lat").value);
-          const long = parseFloat(document.getElementById("long").value);
+        if (!latitude || !longitude) {
+          document.getElementById("results").innerHTML =
+            '<p style="color: red;">Please provide both latitude and longitude.</p>';
+          return;
+        }
 
-          try {
-            // Fetch prediction for confirmed cases
-            let response = await fetch("http://localhost:5000/predict_cases", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ lat, long }),
-            });
-            let data = await response.json();
-            document.getElementById(
-              "predicted-cases"
-            ).innerText = `Predicted Confirmed Cases: ${data.predicted_cases}`;
-
-            // Fetch prediction for case fatality ratio
-            response = await fetch("http://localhost:5000/predict_cfr", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ lat, long }),
-            });
-            data = await response.json();
-            document.getElementById(
-              "predicted-cfr"
-            ).innerText = `Predicted CFR: ${data.predicted_cfr}`;
-          } catch (error) {
-            console.error("Error:", error);
-          }
+        const response = await fetch("/predict", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            Lat: parseFloat(latitude),
+            Long: parseFloat(longitude),
+          }),
         });
+
+        const data = await response.json();
+
+        if (data.error) {
+          document.getElementById(
+            "results"
+          ).innerHTML = `<p style="color: red;">${data.error}</p>`;
+        } else {
+          document.getElementById("results").innerHTML = `
+          <p><strong>Confirmed Cases:</strong> ${data.confirmed_cases}</p>
+          <p><strong>Case Fatality Ratio (CFR):</strong> ${data.cfr}</p>
+        `;
+        }
+      }
     </script>
   </body>
 </html>
