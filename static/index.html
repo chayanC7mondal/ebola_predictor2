@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Prediction App</title>
+  </head>
+  <body>
+    <h1>Predict Cases and CFR</h1>
+    <form id="prediction-form">
+      <label for="lat">Latitude: </label>
+      <input type="number" id="lat" name="lat" required />
+      <label for="long">Longitude: </label>
+      <input type="number" id="long" name="long" required />
+      <button type="submit">Submit</button>
+    </form>
+
+    <div id="results">
+      <p id="predicted-cases"></p>
+      <p id="predicted-cfr"></p>
+    </div>
+
+    <script>
+      document
+        .getElementById("prediction-form")
+        .addEventListener("submit", async (event) => {
+          event.preventDefault();
+
+          const lat = parseFloat(document.getElementById("lat").value);
+          const long = parseFloat(document.getElementById("long").value);
+
+          try {
+            // Fetch prediction for confirmed cases
+            let response = await fetch("http://localhost:5000/predict_cases", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ lat, long }),
+            });
+            let data = await response.json();
+            document.getElementById(
+              "predicted-cases"
+            ).innerText = `Predicted Confirmed Cases: ${data.predicted_cases}`;
+
+            // Fetch prediction for case fatality ratio
+            response = await fetch("http://localhost:5000/predict_cfr", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ lat, long }),
+            });
+            data = await response.json();
+            document.getElementById(
+              "predicted-cfr"
+            ).innerText = `Predicted CFR: ${data.predicted_cfr}`;
+          } catch (error) {
+            console.error("Error:", error);
+          }
+        });
+    </script>
+  </body>
+</html>
